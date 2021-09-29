@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "bcm2835.h": "c",
+        "string.h": "c",
+        "stdio.h": "c",
+        "time.h": "c",
+        "types.h": "c",
+        "assert.h": "c"
+    }
+}

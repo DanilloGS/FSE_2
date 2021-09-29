@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "cjson.h": "c"
+        "cjson.h": "c",
+        "bcm2835.h": "c",
+        "bme280.h": "c",
+        "gpio.h": "c",
+        "stdio.h": "c"
     }
 }

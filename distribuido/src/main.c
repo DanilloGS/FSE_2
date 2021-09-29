@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include <wiringPi.h>
 #include "cJSON.h"
 
 typedef struct Server {
@@ -14,10 +14,7 @@ typedef struct Server {
   cJSON *outputs, *inputs;
 } Server;
 
-typedef struct Pins {
-  int gpio;
-  char type[50], tag[20];
-} Pins;
+Server *server_config;
 
 char *read_file(char *file_path) {
   char *fp = file_path ? file_path : "../config/configuracao_andar_terreo.json";
@@ -36,49 +33,31 @@ char *read_file(char *file_path) {
     fclose(f);
     return buffer;
   } else {
-    return "Error";
     perror("fopen");
+    return "Error";
   }
 }
 
-struct Server create_json(char *json_string) {
-  Server server;
+void create_json(char *json_string, Server *server_config) {
   cJSON *json = cJSON_Parse(json_string);
   cJSON *porta, *ip, *outputs, *output, *inputs, *input, *nome;
 
-  strcpy(server.ip, cJSON_GetObjectItemCaseSensitive(json, "ip")->valuestring);
-  strcpy(server.nome, cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring);
-  server.porta = cJSON_GetObjectItemCaseSensitive(json, "porta")->valueint;
-  server.outputs = cJSON_GetObjectItemCaseSensitive(json, "outputs");
-  server.inputs = cJSON_GetObjectItemCaseSensitive(json, "inputs");
-
-  return server;
-}
-
-void create_gpio_reference(cJSON *json_pins, Pins *pins) {
-  cJSON *json_pin = NULL;
-  int i = 0;
-  cJSON_ArrayForEach(json_pin, json_pins) {
-    strcpy(pins[i].type, cJSON_GetObjectItemCaseSensitive(json_pin, "type")->valuestring);
-    strcpy(pins[i].tag, cJSON_GetObjectItemCaseSensitive(json_pin, "tag")->valuestring);
-    pins[i].gpio = cJSON_GetObjectItemCaseSensitive(json_pin, "gpio")->valueint;
-    i++;
-  }
+  strcpy(server_config->ip, cJSON_GetObjectItemCaseSensitive(json, "ip")->valuestring);
+  strcpy(server_config->nome, cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring);
+  server_config->porta = cJSON_GetObjectItemCaseSensitive(json, "porta")->valueint;
+  server_config->outputs = cJSON_GetObjectItemCaseSensitive(json, "outputs");
+  server_config->inputs = cJSON_GetObjectItemCaseSensitive(json, "inputs");
 }
 
 int main(int argc, char const *argv[]) {
-  struct Server server;
-  struct Pins *output_pins, *input_pins;
-  int total_pins;
-  char *json_string = read_file(argv[1]);
-  server = create_json(json_string);
+  wiringPiSetup();
+  read_gpio(atoi(argv[1]));
+  // struct Server server_config;
+  // int total_pins;
+  // char *json_string = read_file(argv[1]);
+  // server_config = create_json(json_string);
 
-  total_pins = cJSON_GetArraySize(server.outputs);
-  output_pins = malloc(sizeof(Pins) * total_pins);
-  total_pins = cJSON_GetArraySize(server.inputs);
-  input_pins = malloc(sizeof(Pins) * total_pins);
-
-  create_gpio_reference(server.outputs, output_pins);
-  create_gpio_reference(server.inputs, input_pins);
+  // create_gpio_reference(server_config.outputs);
+  // create_gpio_reference(server_config.inputs);
 
 }
