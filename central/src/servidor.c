@@ -1,36 +1,27 @@
+// C program to demonstrate
+// socket programming in finding ip address
+// and port number of connected client
+// on Server Side
 #include <stdio.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <string.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
 
-void TrataClienteTCP(int socketCliente)
-{
-	char buffer[16];
-	int tamanhoRecebido;
-
-	if ((tamanhoRecebido = recv(socketCliente, buffer, 16, 0)) < 0)
-		printf("Erro no recv()\n");
-
-	while (tamanhoRecebido > 0)
-	{
-		if (send(socketCliente, buffer, tamanhoRecebido, 0) != tamanhoRecebido)
-			printf("Erro no envio - send()\n");
-
-		if ((tamanhoRecebido = recv(socketCliente, buffer, 16, 0)) < 0)
-			printf("Erro no recv()\n");
-	}
-}
+#define IP "127.0.0.1"
+// #define IP "192.168.0.53"
+#define PORTA 10007
 
 char *read_file(int file_path)
 {
 	char *fp = file_path == 1 ? "./config/configuracao_andar_1.json" : "./config/configuracao_andar_terreo.json";
 	long length;
 	FILE *file = fopen(fp, "r");
-
+	printf("%d\n", length);
 	if (file)
 	{
 		fseek(file, 0, SEEK_END);
@@ -50,52 +41,59 @@ char *read_file(int file_path)
 	}
 }
 
-int main(int argc, char *argv[])
+int main()
 {
-	int servidorSocket;
-	int socketCliente;
-	struct sockaddr_in servidorAddr;
-	struct sockaddr_in clienteAddr;
-	unsigned short servidorPorta;
-	unsigned int clienteLength;
+	// Two buffers for message communication
+	char buffer1[100000], buffer2[1];
+	int option = 1;
+	int server = socket(AF_INET, SOCK_STREAM, 0);
+	if (server < 0)
+		printf("Error in server creating\n");
+	else
+		printf("Server Created\n");
 
-	servidorPorta = 10007;
+	struct sockaddr_in my_addr, peer_addr;
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_addr.s_addr = INADDR_ANY;
 
-	// Abrir Socket
-	if ((servidorSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
-		printf("falha no socker do Servidor\n");
+	// This ip address will change according to the machine
+	// my_addr.sin_addr.s_addr = inet_addr(IP);
+	my_addr.sin_port = htons(PORTA);
 
-	// Montar a estrutura sockaddr_in
-	memset(&servidorAddr, 0, sizeof(servidorAddr)); // Zerando a estrutura de dados
-	servidorAddr.sin_family = AF_INET;
-	servidorAddr.sin_addr.s_addr = htonl("192.168.0.53");
-	servidorAddr.sin_port = htons(servidorPorta);
+	if (bind(server, (struct sockaddr *)&my_addr, sizeof(my_addr)) == 0)
+		printf("Binded Correctly\n");
+	else
+		printf("Unable to bind\n");
 
-	// Bind
-	if (bind(servidorSocket, (struct sockaddr *)&servidorAddr, sizeof(servidorAddr)) < 0)
-	{
-		perror("Bind");
-		exit(0);
-	}
+	if (listen(server, 3) == 0)
+		printf("Listening ...\n");
+	else
+		printf("Unable to listen\n");
 
-	// Listen
-	if (listen(servidorSocket, 10) < 0)
-		printf("Falha no Listen\n");
+	socklen_t addr_size;
+	addr_size = sizeof(struct sockaddr_in);
 
+	// Ip character array will store the ip address of client
+	char *ip;
+
+	// while loop is iterated infinitely to
+	// accept infinite connection one by one
+	strcpy(buffer1, read_file(0));
 	while (1)
 	{
-		clienteLength = sizeof(clienteAddr);
-		if ((socketCliente = accept(servidorSocket,
-									(struct sockaddr *)&clienteAddr,
-									&clienteLength)) < 0)
-			printf("Falha no Accept\n");
+		int acc = accept(server, (struct sockaddr *)&peer_addr, &addr_size);
+		printf("Connection Established\n");
+		char ip[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &(peer_addr.sin_addr), ip, INET_ADDRSTRLEN);
 
-		printf("Conexão do Cliente %s\n", inet_ntoa(clienteAddr.sin_addr));
+		// "ntohs(peer_addr.sin_port)" function is
+		// for finding port number of client
+		printf("connection established with IP : %s and PORT : %d\n",
+			   ip, ntohs(peer_addr.sin_port));
 
-		TrataClienteTCP(socketCliente);
-		close(socketCliente);
+		// recv(acc, buffer2, 256, 0);
+		// printf("Client : %s\n", buffer2);
+		send(acc, buffer1, 100000, 0);
 	}
-	close(servidorSocket);
-	// char *buffer = read_file(atoi(argv[1]));
-	// printf("%s\n", buffer);
+	return 0;
 }
