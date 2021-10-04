@@ -13,7 +13,7 @@ void parse_json_string(char *json_string, Server *server)
     server->inputs = cJSON_GetObjectItemCaseSensitive(json, "inputs");
 }
 
-cJSON *final_json(Server *server, double temperature, double humidity, int total_people)
+void final_json(char **json_string, Server *server, int temperature, int humidity, int total_people)
 {
     cJSON *gpio_object = cJSON_CreateObject();
     int count = 2;
@@ -31,8 +31,10 @@ cJSON *final_json(Server *server, double temperature, double humidity, int total
             if (strcmp(type, "contagem") != 0)
             {
                 char *tag = cJSON_GetObjectItemCaseSensitive(item, "tag")->valuestring;
-                int value = read_gpio(cJSON_GetObjectItemCaseSensitive(item, "gpio")->valueint);
+                int gpio = cJSON_GetObjectItemCaseSensitive(item, "gpio")->valueint;
+                int value = read_gpio(gpio);
                 cJSON *array_item = cJSON_CreateObject();
+                cJSON_AddNumberToObject(array_item, "gpio", gpio);
                 cJSON_AddStringToObject(array_item, "type", type);
                 cJSON_AddStringToObject(array_item, "tags", tag);
                 cJSON_AddNumberToObject(array_item, "value", value);
@@ -44,5 +46,6 @@ cJSON *final_json(Server *server, double temperature, double humidity, int total
     cJSON_AddNumberToObject(gpio_object, "temperature", temperature);
     cJSON_AddNumberToObject(gpio_object, "humidity", humidity);
     cJSON_AddNumberToObject(gpio_object, "total_people", total_people);
-    return gpio_object;
+    *json_string = malloc(5000);
+    strcpy(*json_string, cJSON_Print(gpio_object));
 }

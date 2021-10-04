@@ -1,59 +1,41 @@
+#include <wiringPi.h>
 #include <stdio.h>
-#include <dirent.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <bcm2835.h>
-#include <unistd.h>
+#include <stdlib.h>
+#include <stdint.h>
 
-#define MAXTIMINGS 100
-#define TEMP_UMI_PIN 21
+#define MAX_TIMINGS 100
+#define DHT_PIN 29 
 
-int dht22(float *temperature, float *humidity)
+void read_dht_data(int *temperature, int *humidity, int count)
 {
-    int bits[250], data[100];
-    int bitidx = 0;
-    int counter = 0;
-    int laststate = 0x1;
-    int j = 0;
-
-    // Set GPIO pin to output
-    bcm2835_gpio_fsel(TEMP_UMI_PIN, BCM2835_GPIO_FSEL_OUTP);
-
-    bcm2835_gpio_write(TEMP_UMI_PIN, HIGH);
-    usleep(500000); // 500 ms
-    bcm2835_gpio_write(TEMP_UMI_PIN, LOW);
-    usleep(20000);
-
-    bcm2835_gpio_fsel(TEMP_UMI_PIN, BCM2835_GPIO_FSEL_INPT);
-
+    uint8_t laststate = HIGH;
+    uint8_t counter = 0;
+    uint8_t j = 0, i;
+    int data[5] = {0, 0, 0, 0, 0};
     data[0] = data[1] = data[2] = data[3] = data[4] = 0;
-
-    while (bcm2835_gpio_lev(TEMP_UMI_PIN) == 1)
-    {
-        usleep(1);
-    }
-    for (int i = 0; i < MAXTIMINGS; i++)
+    pinMode(DHT_PIN, OUTPUT);
+    digitalWrite(DHT_PIN, LOW);
+    delay(18);
+    pinMode(DHT_PIN, INPUT);
+    for (i = 0; i < MAX_TIMINGS; i++)
     {
         counter = 0;
-        while (bcm2835_gpio_lev(TEMP_UMI_PIN) == laststate)
+        while (digitalRead(DHT_PIN) == laststate)
         {
             counter++;
-            if (counter == 1000)
+            delayMicroseconds(1);
+            if (counter == 255)
+            {
                 break;
+            }
         }
-        laststate = bcm2835_gpio_lev(TEMP_UMI_PIN);
-        if (counter == 1000)
+        laststate = digitalRead(DHT_PIN);
+        if (counter == 255)
             break;
-        bits[bitidx++] = counter;
-
-        if ((i > 3) && (i % 2 == 0))
+        if ((i >= 4) && (i % 2 == 0))
         {
             data[j / 8] <<= 1;
-            if (counter > 200)
+            if (counter > 16)
                 data[j / 8] |= 1;
             j++;
         }
@@ -62,15 +44,36 @@ int dht22(float *temperature, float *humidity)
     if ((j >= 39) &&
         (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF)))
     {
-        *humidity = data[0] * 256 + data[1];
-        *humidity /= 10;
-
-        *temperature = (data[2] & 0x7F) * 256 + data[3];
-        *temperature /= 10.0;
+        float h = (float)((data[0] << 8) + data[1]) / 10;
+        if (h > 100)
+        {
+            h = data[0]; 
+        }
+        float c = (float)(((data[2] & 0x7F) << 8) + data[3]) / 10;
+        if (c > 125)
+        {
+            c = data[2]; 
+        }
         if (data[2] & 0x80)
-            *temperature *= -1;
-        return 1;
+        {
+            c = -c;
+        }
+        float f = c * 1.8f + 32;
+        *humidity = h;
+        *temperature = c;
     }
-    printf("Erro na leitura da temperatura e humidade\n");
-    return 0;
+    else
+    {
+
+        printf("Erro ao ler temperatura e humidade. Realizando nova leitura\n");
+        delay(100);
+        if (count != MAX_TIMINGS)
+            read_dht_data(temperature, humidity, count + 1);
+        else
+        {
+            *humidity *= 1;
+            *temperature *= 1;
+            printf("Não é possível ler o sensor DHT22\nUtlizando valor da leitura anterior\n");
+        }
+    }
 }

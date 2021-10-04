@@ -11,6 +11,6 @@ typedef struct Server
 } Server;
 
 void parse_json_string(char *json_string, Server *server);
-cJSON *final_json(Server *server, double temperature, double humidity, int total_people);
+void final_json(char **json_string, Server *server, int temperature, int humidity, int total_people);
 
 #endif /* JSON_H_ */
