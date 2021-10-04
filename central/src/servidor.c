@@ -2,98 +2,124 @@
 // socket programming in finding ip address
 // and port number of connected client
 // on Server Side
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <string.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <pthread.h>
 
-#define IP "127.0.0.1"
-// #define IP "192.168.0.53"
+#include "cJSON.h"
+
+#define IP "192.168.0.53"
 #define PORTA 10007
+#define MAX_SIZE 5000
 
-char *read_file(int file_path)
+pthread_t SOCKET_GET, SOCKET_SEND;
+int socketCliente;
+char *file, *json_string;
+
+char *read_file(int file_id)
 {
-	char *fp = file_path == 1 ? "./config/configuracao_andar_1.json" : "./config/configuracao_andar_terreo.json";
-	long length;
-	FILE *file = fopen(fp, "r");
-	printf("%d\n", length);
-	if (file)
-	{
-		fseek(file, 0, SEEK_END);
-		length = ftell(file);
-		fseek(file, 0, SEEK_SET);
-		char *buffer = malloc(length + 1);
-		if (buffer)
-		{
-			fread(buffer, 1, length, file);
-		}
-		fclose(file);
-		return buffer;
-	}
-	else
-	{
-		exit(0);
-	}
+  char *fp = file_id == 2 ? "./config/configuracao_andar_1.json" : "./config/configuracao_andar_terreo.json";
+  long length;
+  FILE *file = fopen(fp, "r");
+  if (file)
+  {
+    fseek(file, 0, SEEK_END);
+    length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char *buffer = malloc(length + 1);
+    if (buffer)
+    {
+      fread(buffer, 1, length, file);
+    }
+    fclose(file);
+    return buffer;
+  }
+  else
+  {
+    exit(0);
+  }
 }
 
-int main()
+void send_data()
 {
-	// Two buffers for message communication
-	char buffer1[100000], buffer2[1];
-	int option = 1;
-	int server = socket(AF_INET, SOCK_STREAM, 0);
-	if (server < 0)
-		printf("Error in server creating\n");
-	else
-		printf("Server Created\n");
+  int value = 0;
+  int tamanhoRecebido = strlen(file);
+  if (tamanhoRecebido > 0)
+  {
+    send(socketCliente, value, sizeof(int), 0);
+    send(socketCliente, file, tamanhoRecebido, 0);
+  }
+  sleep(1);
+}
 
-	struct sockaddr_in my_addr, peer_addr;
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_addr.s_addr = INADDR_ANY;
+void get_data()
+{
+  char *data = malloc(MAX_SIZE);
+  int total_bytes = recv(socketCliente, data, 5000, 0);
+  if (total_bytes)
+  {
+    strcpy(json_string, data);
+  }
+  printf("%s\n", json_string);
+  free(data);
+  sleep(1);
+}
 
-	// This ip address will change according to the machine
-	// my_addr.sin_addr.s_addr = inet_addr(IP);
-	my_addr.sin_port = htons(PORTA);
+int main(int argc, char const *argv[])
+{
+  int servidorSocket;
+  int option = 1, floor_id;
+  struct sockaddr_in servidorAddr;
+  struct sockaddr_in clienteAddr;
+  unsigned int clienteLength;
 
-	if (bind(server, (struct sockaddr *)&my_addr, sizeof(my_addr)) == 0)
-		printf("Binded Correctly\n");
-	else
-		printf("Unable to bind\n");
+  if ((servidorSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    perror("Socket");
 
-	if (listen(server, 3) == 0)
-		printf("Listening ...\n");
-	else
-		printf("Unable to listen\n");
+  memset(&servidorAddr, 0, sizeof(servidorAddr));
+  servidorAddr.sin_family = AF_INET;
+  servidorAddr.sin_addr.s_addr = inet_addr(IP);
+  servidorAddr.sin_port = htons(PORTA);
 
-	socklen_t addr_size;
-	addr_size = sizeof(struct sockaddr_in);
+  setsockopt(servidorSocket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+  if (bind(servidorSocket, (struct sockaddr *)&servidorAddr, sizeof(servidorAddr)) < 0)
+    perror("Bind");
 
-	// Ip character array will store the ip address of client
-	char *ip;
+  if (listen(servidorSocket, 10) < 0)
+    perror("Listen");
 
-	// while loop is iterated infinitely to
-	// accept infinite connection one by one
-	strcpy(buffer1, read_file(0));
-	while (1)
-	{
-		int acc = accept(server, (struct sockaddr *)&peer_addr, &addr_size);
-		printf("Connection Established\n");
-		char ip[INET_ADDRSTRLEN];
-		inet_ntop(AF_INET, &(peer_addr.sin_addr), ip, INET_ADDRSTRLEN);
+  // while (1)
+  // {
+  //   printf("Qual andar você deseja monitorar:\n\t1)Terreo\n\t2)Primeiro\n");
+  //   scanf("%d", &floor_id);
+  //   if (floor_id < 1 || floor_id > 2)
+  //     printf("ID inválido\n");
+  //   else
+  //     break;
+  // }
+  file = malloc(MAX_SIZE);
+  json_string = malloc(MAX_SIZE);
+  strcpy(file, read_file(atoi(argv[1])));
+  // char *file = read_file(floor_id);
 
-		// "ntohs(peer_addr.sin_port)" function is
-		// for finding port number of client
-		printf("connection established with IP : %s and PORT : %d\n",
-			   ip, ntohs(peer_addr.sin_port));
-
-		// recv(acc, buffer2, 256, 0);
-		// printf("Client : %s\n", buffer2);
-		send(acc, buffer1, 100000, 0);
-	}
-	return 0;
+  clienteLength = sizeof(clienteAddr);
+  if ((socketCliente = accept(servidorSocket,
+                              (struct sockaddr *)&clienteAddr,
+                              &clienteLength)) < 0)
+    perror("Accept");
+  while (1)
+  {
+    pthread_create(&SOCKET_GET, NULL, get_data, NULL);
+    pthread_create(&SOCKET_SEND, NULL, send_data, NULL);
+    pthread_join(SOCKET_GET, NULL);
+    pthread_join(SOCKET_SEND, NULL);
+    sleep(1);
+  }
+  close(servidorSocket);
 }
