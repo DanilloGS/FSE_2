@@ -17,7 +17,7 @@
 
 // #define IP "127.0.0.1"
 #define IP "192.168.0.53"
-#define PORTA 10007
+#define PORTA 10207
 #define MAX_SIZE 5000
 pthread_t SOCKET_GET, SOCKET_SEND;
 
@@ -25,10 +25,10 @@ char *mensagem;
 int clienteSocket;
 int temperature = 0, humidity = 0;
 
-void get_json()
+void get_request()
 {
     int data_type = 0, gpio_pin;
-    recv(clienteSocket, data_type, sizeof(int), 0);
+    recv(clienteSocket, data_type, sizeof(int), MSG_WAITALL);
     switch (data_type)
     {
     case 0:
@@ -38,11 +38,6 @@ void get_json()
         break;
     case 1:
         // Toggle output/input
-        recv(clienteSocket, gpio_pin, sizeof(int), 0);
-        read_gpio(gpio_pin) ? turn_off(gpio_pin) : turn_on(gpio_pin);
-        break;
-    case 2:
-        // u
         recv(clienteSocket, gpio_pin, sizeof(int), 0);
         read_gpio(gpio_pin) ? turn_off(gpio_pin) : turn_on(gpio_pin);
         break;
@@ -90,7 +85,7 @@ void main_socket()
 
     while (1)
     {
-        pthread_create(&SOCKET_GET, NULL, get_json, NULL);
+        pthread_create(&SOCKET_GET, NULL, get_request, NULL);
         pthread_create(&SOCKET_SEND, NULL, send_data, NULL);
         pthread_join(SOCKET_GET, NULL);
         pthread_join(SOCKET_SEND, NULL);
