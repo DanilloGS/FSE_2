@@ -26,10 +26,10 @@ Este trabalho tem por objetivo a criação de um sistema distribuído de automa�
 |**Alarme de Incêndio**   |   Implementação da rotina de acionamento do alarme de incêncio com o correto acionamento dos aspersores. |   N   |
 |**Log (CSV)**   |   Geração de Log em arquivo CSV.  |   N |
 |**Servidores Distribuídos**    |       |       |
-|**Inicialização (Arquivo de Configuração)**    |   Correta inicialização do serviço à partir do arquivo de configuração JSON.  |   Y/N (Socket distribuido possui porta aleatória)   |
+|**Inicialização (Arquivo de Configuração)**    |   Inicialização do serviço à partir do arquivo de configuração JSON.  |   Y/N (Socket distribuido possui porta aleatória)   |
 |**Leitura de Temperatura / Umidade**    |   Leitura, armazenamento e envio dos valores de temperatura / umidade.  |   Y   |
-|**Acionamento de Dispositivos** |   Correto acionamento de lâmpadas, aparelhos de ar-condicionado e aspersor pelo comando do Servidor Central.    |  Y  |
-|**Estado dos Sensores** |   Correta leitura e envio (*mensagem push*) para o Servidor Central um alerta pelo acionamento dos sensores de presença / abertura de portas/janelas e sensor de fumaça.   |   N  |
-|**Contagem de pessoas** |   Correta leitura dos sensores de contagem de pessoas.   |   N  |
+|**Acionamento de Dispositivos** |   Acionamento de lâmpadas, aparelhos de ar-condicionado e aspersor pelo comando do Servidor Central.    |  Y  |
+|**Estado dos Sensores** |   Leitura e envio (*mensagem push*) para o Servidor Central um alerta pelo acionamento dos sensores de presença / abertura de portas/janelas e sensor de fumaça.   |   N  |
+|**Contagem de pessoas** |   Leitura dos sensores de contagem de pessoas.   |   Y  |
 |**Geral**    |       |       |
-|**Comunicação TCP/IP**  |   Correta implementação de comunicação entre os servidores usando o protocolo TCP/IP, incluindo as mensagens do tipo *push*. |   Y   |
+|**Comunicação TCP/IP**  |   Implementação de comunicação entre os servidores usando o protocolo TCP/IP, incluindo as mensagens do tipo *push*. |   Y   |
