@@ -1,26 +1,27 @@
-// C program to demonstrate
-// socket programming in finding ip address
-// and port number of connected client
-// on Server Side
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "cJSON.h"
+#include "menu.h"
 
 #define IP "192.168.0.53"
-#define PORTA 10007
+#define PORTA 10207
 #define MAX_SIZE 5000
+#define true 1
+#define false 0
 
-pthread_t SOCKET_GET, SOCKET_SEND;
+pthread_t SOCKET_GET, SOCKET_SEND, MENU_ID, SEND_SIGNAL;
 int socketCliente;
-char *file, *json_string;
+char *file, *json_string, toggle = false;
 
 char *read_file(int file_id)
 {
@@ -46,35 +47,66 @@ char *read_file(int file_id)
   }
 }
 
-void send_data()
-{
-  int value = 0;
-  int tamanhoRecebido = strlen(file);
-  if (tamanhoRecebido > 0)
-  {
-    send(socketCliente, value, sizeof(int), 0);
-    send(socketCliente, file, tamanhoRecebido, 0);
-  }
-  sleep(1);
-}
-
 void get_data()
 {
   char *data = malloc(MAX_SIZE);
-  int total_bytes = recv(socketCliente, data, 5000, 0);
-  if (total_bytes)
+  int buffer_size = recv(socketCliente, data, 5000, 0);
+  if (buffer_size)
   {
     strcpy(json_string, data);
   }
-  printf("%s\n", json_string);
   free(data);
   sleep(1);
 }
 
-int main(int argc, char const *argv[])
+void toogle_value()
 {
+
+  int pin, value = 0;
+  printf("\nQual pino você deseja mudar o valor: ");
+  scanf("%d", &pin);
+  send(socketCliente, value, sizeof(int), 0);
+  send(socketCliente, pin, sizeof(int), 0);
+  toggle = false;
+}
+
+void send_data()
+{
+  int value = 0;
+  int file_size = strlen(file);
+  if (file_size > 0)
+  {
+    if (!toggle)
+    {
+      send(socketCliente, value, sizeof(int), 0);
+      send(socketCliente, file, file_size, 0);
+    }
+    else
+    {
+      toogle_value();
+    }
+  }
+  sleep(1);
+}
+
+void menu(char *file)
+{
+  if (strlen(file) > 0)
+  {
+    cJSON *json_object = cJSON_Parse(file);
+    print_menu(json_object);
+  }
+}
+
+void change_gpio_value(){
+  toggle = true;
+}
+
+void main_socket(int id)
+{
+  signal(SIGQUIT, change_gpio_value);
   int servidorSocket;
-  int option = 1, floor_id;
+  int option = 1, file_id = id;
   struct sockaddr_in servidorAddr;
   struct sockaddr_in clienteAddr;
   unsigned int clienteLength;
@@ -94,19 +126,10 @@ int main(int argc, char const *argv[])
   if (listen(servidorSocket, 10) < 0)
     perror("Listen");
 
-  // while (1)
-  // {
-  //   printf("Qual andar você deseja monitorar:\n\t1)Terreo\n\t2)Primeiro\n");
-  //   scanf("%d", &floor_id);
-  //   if (floor_id < 1 || floor_id > 2)
-  //     printf("ID inválido\n");
-  //   else
-  //     break;
-  // }
   file = malloc(MAX_SIZE);
   json_string = malloc(MAX_SIZE);
-  strcpy(file, read_file(atoi(argv[1])));
-  // char *file = read_file(floor_id);
+  strcpy(file, read_file(file_id));
+  // char *file = read_file(file_id);
 
   clienteLength = sizeof(clienteAddr);
   if ((socketCliente = accept(servidorSocket,
@@ -115,6 +138,8 @@ int main(int argc, char const *argv[])
     perror("Accept");
   while (1)
   {
+    pthread_create(&MENU_ID, NULL, menu, json_string);
+    pthread_join(MENU_ID, NULL);
     pthread_create(&SOCKET_GET, NULL, get_data, NULL);
     pthread_create(&SOCKET_SEND, NULL, send_data, NULL);
     pthread_join(SOCKET_GET, NULL);
