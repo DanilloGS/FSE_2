@@ -20,7 +20,7 @@
 #define false 0
 
 pthread_t SOCKET_GET, SOCKET_SEND, MENU_ID, SEND_SIGNAL;
-int socketCliente;
+int socketCliente, file_id;
 char *file, *json_string, toggle = false;
 
 char *read_file(int file_id)
@@ -62,11 +62,10 @@ void get_data()
 void toogle_value()
 {
 
-  int pin, value = 0;
+  char *pin[5];
   printf("\nQual pino você deseja mudar o valor: ");
-  scanf("%d", &pin);
-  send(socketCliente, value, sizeof(int), 0);
-  send(socketCliente, pin, sizeof(int), 0);
+  scanf("%s", pin);
+  send(socketCliente, pin, sizeof(char) * 5, 0);
   toggle = false;
 }
 
@@ -78,7 +77,6 @@ void send_data()
   {
     if (!toggle)
     {
-      send(socketCliente, value, sizeof(int), 0);
       send(socketCliente, file, file_size, 0);
     }
     else
@@ -98,15 +96,26 @@ void menu(char *file)
   }
 }
 
-void change_gpio_value(){
-  toggle = true;
+void change_gpio_value(int signal)
+{
+  if (signal == SIGQUIT)
+  {
+    printf("\nAguarde...\n");
+    toggle = true;
+  }
+  if (signal == SIGTSTP)
+  {
+    file_id = file_id == 1 ? 2 : 1;
+    strcpy(file, read_file(file_id));
+  }
 }
 
 void main_socket(int id)
 {
   signal(SIGQUIT, change_gpio_value);
+  signal(SIGTSTP, change_gpio_value);
   int servidorSocket;
-  int option = 1, file_id = id;
+  int option = 1;
   struct sockaddr_in servidorAddr;
   struct sockaddr_in clienteAddr;
   unsigned int clienteLength;

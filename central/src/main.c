@@ -6,7 +6,7 @@
 
 int main(int argc, char const *argv[])
 {
-    print_intro();
+    // print_intro();
     // int file_id;
     // while (1)
     // {
@@ -17,6 +17,6 @@ int main(int argc, char const *argv[])
     //   else
     //     break;
     // }
-    main_socket(atoi(argv));
+    main_socket(atoi(argv[1]));
     return 0;
 }
