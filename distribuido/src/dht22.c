@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define MAX_TIMINGS 100
+#define MAX_STACK 5
 #define DHT_PIN 29 
 
 void read_dht_data(int *temperature, int *humidity, int count)
@@ -67,7 +68,7 @@ void read_dht_data(int *temperature, int *humidity, int count)
 
         printf("Erro ao ler temperatura e humidade. Realizando nova leitura\n");
         delay(100);
-        if (count != MAX_TIMINGS)
+        if (count != MAX_STACK)
             read_dht_data(temperature, humidity, count + 1);
         else
         {
