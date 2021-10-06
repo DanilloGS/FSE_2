@@ -21,39 +21,59 @@
 #define MAX_SIZE 5000
 pthread_t SOCKET_GET, SOCKET_SEND;
 
-char *mensagem;
+char *mensagem, *data;
 int clienteSocket;
-int temperature = 0, humidity = 0;
+int temperature = 0, humidity = 0, toggle_value = 0;
 
 void get_request()
 {
-    int data_type = 0, gpio_pin;
-    recv(clienteSocket, data_type, sizeof(int), MSG_WAITALL);
-    switch (data_type)
+    int i;
+    char num[5];
+    recv(clienteSocket, data, MAX_SIZE, 0);
+    perror("Teste1");
+    for (i = 0; data[i] != '\0'; i++)
+        if (i > 3)
+            break;
+    printf("%s\n", data);
+    if (i < 3)
     {
-    case 0:
-        // Get JSON
-        recv(clienteSocket, mensagem, MAX_SIZE, 0);
-        printf("%s\n", mensagem);
-        break;
-    case 1:
-        // Toggle output/input
-        recv(clienteSocket, gpio_pin, sizeof(int), 0);
-        read_gpio(gpio_pin) ? turn_off(gpio_pin) : turn_on(gpio_pin);
-        break;
+        toggle_value = 1;
+        strcpy(num, data);
+        int value = read_gpio(atoi(num));
+        printf("%s\n", num);
+        if(value == 0){
+            printf("Ligou\n");
+            turn_on(atoi(num));
+        } else {
+            printf("Desligou\n");
+            turn_off(atoi(num));
+        }
+    }
+    else
+    {
+        toggle_value = 0;
+        strcpy(mensagem, data);
     }
     sleep(1);
 }
 
 void send_data()
 {
-    if (strlen(mensagem) > 0)
+    if (strlen(mensagem) > 0 && !toggle_value)
     {
+        char *final = malloc(MAX_SIZE);
+        perror("Teste 1");
         Server *server_config = malloc(sizeof(Server) + 1);
+        perror("Teste 2");
         parse_json_string(mensagem, server_config);
+        perror("Teste 3");
         read_dht_data(&temperature, &humidity, 0);
-        final_json(&mensagem, server_config, temperature, humidity, -1);
-        send(clienteSocket, mensagem, MAX_SIZE, 0);
+        perror("Teste 4");
+        final_json(&final, server_config, temperature, humidity, -1);
+        perror("Teste 5");
+        send(clienteSocket, final, MAX_SIZE, 0);
+        perror("Teste 6");
+        free(final);
     }
     sleep(1);
 }
@@ -63,7 +83,8 @@ void main_socket()
     struct sockaddr_in servidorAddr;
     unsigned short servidorPorta;
     char *IP_Servidor;
-    mensagem = calloc(sizeof(char), 5000);
+    mensagem = calloc(MAX_SIZE, sizeof(char));
+    data = calloc(MAX_SIZE, sizeof(char));
     IP_Servidor = inet_addr(IP);
     servidorPorta = PORTA;
 
@@ -82,12 +103,12 @@ void main_socket()
         perror("Connect");
         exit(0);
     }
-
+    // get_request();
     while (1)
     {
         pthread_create(&SOCKET_GET, NULL, get_request, NULL);
-        pthread_create(&SOCKET_SEND, NULL, send_data, NULL);
         pthread_join(SOCKET_GET, NULL);
+        pthread_create(&SOCKET_SEND, NULL, send_data, NULL);
         pthread_join(SOCKET_SEND, NULL);
     }
 }

@@ -6,9 +6,9 @@ void parse_json_string(char *json_string, Server *server)
     cJSON *json = cJSON_Parse(json_string);
     cJSON *porta, *ip, *outputs, *output, *inputs, *input, *nome;
 
-    strcpy(server->ip, cJSON_GetObjectItemCaseSensitive(json, "ip")->valuestring);
-    strcpy(server->nome, cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring);
-    server->porta = cJSON_GetObjectItemCaseSensitive(json, "porta")->valueint;
+    // strcpy(server->ip, cJSON_GetObjectItemCaseSensitive(json, "ip")->valuestring);
+    // strcpy(server->nome, cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring);
+    // server->porta = cJSON_GetObjectItemCaseSensitive(json, "porta")->valueint;
     server->outputs = cJSON_GetObjectItemCaseSensitive(json, "outputs");
     server->inputs = cJSON_GetObjectItemCaseSensitive(json, "inputs");
 }
