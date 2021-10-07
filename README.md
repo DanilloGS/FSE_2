@@ -30,6 +30,8 @@ Este trabalho tem por objetivo a criação de um sistema distribuído de automa�
 - Para acionar uma lâmpada ou ar condicionado deve-se apertar as teclas ```Ctrl + \``` e então escolher qual pino o valor será alterado.
  
 - Para trocar o andar que está sendo monitorado deve-se apertar as teclas ```Ctrl + Z``` e aguardar.
+
+- Para encerrar o programa deve-se apertar as teclas ```Ctrl + C``` em ambos os processos.
  
 ## Checklist
  
