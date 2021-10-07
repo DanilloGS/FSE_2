@@ -1,11 +1,13 @@
 #include "message_formater.h";
 #include "gpio.h";
+#include <string.h>
 
 void parse_json_string(char *json_string, Server *server)
 {
     cJSON *json = cJSON_Parse(json_string);
     cJSON *porta, *ip, *outputs, *output, *inputs, *input, *nome;
-    // strcpy(server->nome, cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring);
+    server->nome = malloc(sizeof(char)*20);
+    strcpy(server->nome, cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring);
     server->outputs = cJSON_GetObjectItemCaseSensitive(json, "outputs");
     server->inputs = cJSON_GetObjectItemCaseSensitive(json, "inputs");
 }
@@ -49,7 +51,7 @@ void final_json(char **json_string, Server *server, int temperature, int humidit
         }
         cJSON_AddItemToObject(gpio_object, gpio_type, gpio_array);
     }
-    // cJSON_AddItemToObject(gpio_object, "nome", server->nome);
+    cJSON_AddStringToObject(gpio_object,"nome", server->nome);
     cJSON_AddNumberToObject(gpio_object, "temperature", temperature);
     cJSON_AddNumberToObject(gpio_object, "humidity", humidity);
     cJSON_AddNumberToObject(gpio_object, "total_people", *total_people);
