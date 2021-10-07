@@ -11,7 +11,8 @@
 #include <signal.h>
 
 #include "cJSON.h"
-#include "menu.h"
+#include "home.h"
+#include "file.h"
 
 #define IP "192.168.0.53"
 #define PORTA 10207
@@ -19,33 +20,9 @@
 #define true 1
 #define false 0
 
-pthread_t SOCKET_GET, SOCKET_SEND, MENU_ID, SEND_SIGNAL;
+pthread_t SOCKET_GET, SOCKET_SEND, MENU_ID;
 int socketCliente, file_id;
-char *file, *json_string, toggle = false;
-
-char *read_file(int file_id)
-{
-  char *fp = file_id == 2 ? "./config/configuracao_andar_1.json" : "./config/configuracao_andar_terreo.json";
-  long length;
-  FILE *file = fopen(fp, "r");
-  if (file)
-  {
-    fseek(file, 0, SEEK_END);
-    length = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    char *buffer = malloc(length + 1);
-    if (buffer)
-    {
-      fread(buffer, 1, length, file);
-    }
-    fclose(file);
-    return buffer;
-  }
-  else
-  {
-    exit(0);
-  }
-}
+char *file, *json_string, toggle_gpio_value = false;
 
 void get_data()
 {
@@ -59,49 +36,32 @@ void get_data()
   sleep(1);
 }
 
-void toogle_value()
-{
-
-  char *pin[5];
-  printf("\nQual pino você deseja mudar o valor: ");
-  scanf("%s", pin);
-  send(socketCliente, pin, sizeof(char) * 5, 0);
-  toggle = false;
-}
-
 void send_data()
 {
   int value = 0;
   int file_size = strlen(file);
   if (file_size > 0)
   {
-    if (!toggle)
-    {
+    if (!toggle_gpio_value)
       send(socketCliente, file, file_size, 0);
-    }
     else
     {
-      toogle_value();
+      char *pin[5];
+      printf("\nQual pino você deseja mudar o valor: ");
+      scanf("%s", pin);
+      send(socketCliente, pin, sizeof(char) * 5, 0);
+      toggle_gpio_value = false;
     }
   }
   sleep(1);
 }
 
-void menu(char *file)
+void handle_signal(int signal)
 {
-  if (strlen(file) > 0)
-  {
-    cJSON *json_object = cJSON_Parse(file);
-    print_menu(json_object);
-  }
-}
-
-void change_gpio_value(int signal)
-{
+  printf("\nAguarde...\n");
   if (signal == SIGQUIT)
   {
-    printf("\nAguarde...\n");
-    toggle = true;
+    toggle_gpio_value = true;
   }
   if (signal == SIGTSTP)
   {
@@ -110,10 +70,10 @@ void change_gpio_value(int signal)
   }
 }
 
-void main_socket(int id)
+void central_socket(int id)
 {
-  signal(SIGQUIT, change_gpio_value);
-  signal(SIGTSTP, change_gpio_value);
+  signal(SIGQUIT, handle_signal);
+  signal(SIGTSTP, handle_signal);
   int servidorSocket;
   int option = 1;
   struct sockaddr_in servidorAddr;
@@ -138,7 +98,6 @@ void main_socket(int id)
   file = malloc(MAX_SIZE);
   json_string = malloc(MAX_SIZE);
   strcpy(file, read_file(file_id));
-  // char *file = read_file(file_id);
 
   clienteLength = sizeof(clienteAddr);
   if ((socketCliente = accept(servidorSocket,
@@ -147,7 +106,7 @@ void main_socket(int id)
     perror("Accept");
   while (1)
   {
-    pthread_create(&MENU_ID, NULL, menu, json_string);
+    pthread_create(&MENU_ID, NULL, print_menu, json_string);
     pthread_join(MENU_ID, NULL);
     pthread_create(&SOCKET_GET, NULL, get_data, NULL);
     pthread_create(&SOCKET_SEND, NULL, send_data, NULL);
