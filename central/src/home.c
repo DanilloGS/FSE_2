@@ -31,17 +31,16 @@ void print_menu(char *file)
     if (strlen(file) > 0)
     {
         cJSON *json = cJSON_Parse(file);
-
         system("clear");
         int temp = cJSON_GetObjectItemCaseSensitive(json, "temperature")->valueint;
         int hum = cJSON_GetObjectItemCaseSensitive(json, "humidity")->valueint;
         int total_people = cJSON_GetObjectItemCaseSensitive(json, "total_people")->valueint;
-        // int *nome = cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring;
+        int *nome = cJSON_GetObjectItemCaseSensitive(json, "nome")->valuestring;
 
         cJSON *outputs = cJSON_GetObjectItemCaseSensitive(json, "output");
         cJSON *inputs = cJSON_GetObjectItemCaseSensitive(json, "input");
         cJSON *pin = NULL;
-        // printf("Localização: %s\n", nome);
+        printf("Monitorando: %s\n", nome);
         printf("Temperatura: %d⁰C\t Úmidade: %d%%\t Pessoas no Prédio: %d\n", temp, hum, total_people);
         printf("\n\nOutput:\n\n       Pino\t\tValor\t\t\tTag\n");
         cJSON_ArrayForEach(pin, outputs)
