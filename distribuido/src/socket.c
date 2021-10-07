@@ -63,12 +63,12 @@ void send_data()
     {
         char *final = malloc(MAX_SIZE);
         Server *server_config = malloc(sizeof(Server));
-        server_config->nome = malloc(20);
         parse_json_string(message, server_config);
         read_dht_data(&temperature, &humidity, 0);
         final_json(&final, server_config, temperature, humidity, &total_people);
         send(clientSocket, final, MAX_SIZE, 0);
         free(final);
+        free(server_config);
     }
     sleep(1);
 }
